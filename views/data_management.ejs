@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>จัดการข้อมูลหลัก | Stock Inventory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 flex h-screen">
+    <aside class="w-64 bg-white border-r flex flex-col justify-between p-6">
+        <div>
+            <div class="flex items-center gap-3 mb-10">
+                <div class="bg-blue-600 p-2 rounded-lg"><i class="fas fa-boxes text-white"></i></div>
+                <h1 class="font-bold text-xl text-slate-800">Inventory Pro</h1>
+            </div>
+            <nav class="space-y-2">
+                <a href="/" class="flex items-center gap-3 p-3 text-slate-500 hover:bg-slate-100 rounded-xl">
+                    <i class="fas fa-chart-line"></i> แผงควบคุมสต็อก
+                </a>
+                <a href="/data" class="flex items-center gap-3 p-3 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-200">
+                    <i class="fas fa-database"></i> จัดการข้อมูลหลัก
+                </a>
+                <a href="#" class="flex items-center gap-3 p-3 text-slate-500 hover:bg-slate-100 rounded-xl transition">
+                    <i class="fas fa-history"></i> ประวัติความเคลื่อนไหว
+                </a>
+            </nav>
+        </div>
+    </aside>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        <header class="flex justify-between items-center mb-10">
+            <div>
+                <h2 class="text-3xl font-bold text-slate-800">จัดการข้อมูลหลัก</h2>
+                <p class="text-slate-400">แก้ไขหรือลบข้อมูลสินค้าหลักออกจากระบบ</p>
+            </div>
+            <div class="relative">
+                <i class="fas fa-search absolute left-3 top-3 text-slate-400"></i>
+                <input type="text" id="searchInput" onkeyup="applyFilters()" placeholder="ค้นหารหัสสินค้า..." 
+                       class="pl-10 pr-4 py-2 border rounded-full w-64 focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+        </header>
+
+        <div class="mb-6 bg-white p-4 rounded-2xl border shadow-sm flex gap-6 items-center">
+            <div class="flex items-center gap-2">
+                <span class="text-sm font-bold text-slate-500">Supplier:</span>
+                <select id="suppFilter" onchange="applyFilters()" class="p-2 border rounded-xl text-sm outline-none bg-slate-50">
+                    <option value="">ทั้งหมด</option>
+                    <% [...new Set(products.map(p => p.supp_code))].sort().forEach(supp => { %>
+                        <option value="<%= supp %>"><%= supp %></option>
+                    <% }); %>
+                </select>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-3xl border shadow-sm overflow-hidden">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-slate-50 border-b text-sm font-bold text-slate-600">
+                    <tr>
+                        <th class="p-4">Box List</th>
+                        <th class="p-4">Supplier</th>
+                        <th class="p-4">Process</th>
+                        <th class="p-4 text-center">Min Stock</th>
+                        <th class="p-4 text-center">Max Stock</th>
+                        <th class="p-4 text-center">จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody id="dataTable">
+                    <% products.forEach(product => { %>
+                        <tr class="border-b hover:bg-slate-50 transition data-row" 
+                            data-name="<%= product.box_list.toLowerCase() %>" 
+                            data-supp="<%= product.supp_code %>">
+                            <td class="p-4 font-bold text-slate-800"><%= product.box_list %></td>
+                            <td class="p-4 text-slate-500 uppercase"><%= product.supp_code %></td>
+                            <td class="p-4 text-slate-500"><%= product.process || '-' %></td>
+                            <td class="p-4 text-center"><%= product.min_stock %></td>
+                            <td class="p-4 text-center text-slate-400"><%= product.max_stock || '-' %></td>
+                            <td class="p-4 text-center space-x-2">
+                                <button onclick="openEditModal('<%= JSON.stringify(product).replace(/'/g, '&#39;') %>')" class="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteItem('<%= product.box_list %>')" class="text-red-600 hover:bg-red-50 p-2 rounded-lg transition">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <div id="editModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+        <div class="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl scale-95 transition-transform duration-300">
+            <h3 class="text-xl font-bold mb-6 text-slate-800">แก้ไขข้อมูลสินค้า</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">รหัสสินค้า (แก้ไขไม่ได้)</label>
+                    <input type="text" id="editBoxList" disabled class="w-full p-3 bg-slate-100 border rounded-xl outline-none font-semibold text-slate-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Supplier Code</label>
+                    <input type="text" id="editSuppCode" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 uppercase">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Process</label>
+                    <input type="text" id="editProcess" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 uppercase" placeholder="เช่น CHI">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Min Stock</label>
+                        <input type="number" id="editMin" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Max Stock</label>
+                        <input type="number" id="editMax" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+            <div class="mt-8 flex gap-3">
+                <button onclick="closeEditModal()" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition">ยกเลิก</button>
+                <button onclick="saveEdit()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition">บันทึกการแก้ไข</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function applyFilters() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const supp = document.getElementById('suppFilter').value;
+            document.querySelectorAll('.data-row').forEach(row => {
+                const nameMatch = row.dataset.name.includes(search);
+                const suppMatch = supp === "" || row.dataset.supp === supp;
+                row.style.display = (nameMatch && suppMatch) ? "" : "none";
+            });
+        }
+
+        async function deleteItem(boxList) {
+            if (confirm(`⚠️ คำเตือน: คุณต้องการลบสินค้า "${boxList}" ออกจากฐานข้อมูลใช่หรือไม่? ข้อมูลสต็อกจะถูกลบออกทั้งหมด`)) {
+                try {
+                    const res = await fetch(`/api/products/${boxList}`, { method: 'DELETE' });
+                    if (res.ok) {
+                        alert('ลบข้อมูลสำเร็จ');
+                        location.reload();
+                    } else {
+                        alert('ไม่สามารถลบข้อมูลได้');
+                    }
+                } catch (err) {
+                    alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+                }
+            }
+        }
+
+        function openEditModal(productData) {
+            const product = JSON.parse(productData);
+            document.getElementById('editBoxList').value = product.box_list;
+            document.getElementById('editSuppCode').value = product.supp_code;
+            document.getElementById('editProcess').value = product.process || '';
+            document.getElementById('editMin').value = product.min_stock;
+            document.getElementById('editMax').value = product.max_stock || 0;
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+        }
+
+        async function saveEdit() {
+            const data = {
+                box_list: document.getElementById('editBoxList').value,
+                supp_code: document.getElementById('editSuppCode').value,
+                process: document.getElementById('editProcess').value,
+                min_stock: document.getElementById('editMin').value,
+                max_stock: document.getElementById('editMax').value
+            };
+            
+            try {
+                const res = await fetch('/api/products/edit', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (res.ok) {
+                    alert('บันทึกการเปลี่ยนแปลงสำเร็จ');
+                    location.reload();
+                } else {
+                    const error = await res.json();
+                    alert('Error: ' + error.error);
+                }
+            } catch (err) {
+                alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+            }
+        }
+    </script>
+</body>
+</html>
