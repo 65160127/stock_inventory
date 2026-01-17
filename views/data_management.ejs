@@ -5,6 +5,9 @@
     <title>จัดการข้อมูลหลัก | Stock Inventory</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body class="bg-slate-50 flex h-screen">
     
@@ -157,6 +160,54 @@
                 else { const error = await res.json(); alert('Error: ' + error.error); }
             } catch (err) { alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้'); }
         }
+
+        function getManagementData() {
+    const rows = document.querySelectorAll(".data-row");
+    const data = [];
+    rows.forEach(row => {
+        if (row.style.display !== "none") {
+            const cols = row.querySelectorAll("td");
+            data.push({
+                "Box List": cols[0].innerText.trim(),
+                "Supplier": cols[1].innerText.trim(),
+                "Process": cols[2].innerText.trim(),
+                "Min Stock": cols[3].innerText.trim(),
+                "Max Stock": cols[4].innerText.trim()
+            });
+        }
+    });
+    return data;
+}
+
+function exportToPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const data = getManagementData();
+    const body = data.map(item => [item["Box List"], item["Supplier"], item["Process"], item["Min Stock"], item["Max Stock"]]);
+    doc.text("Master Data Report", 14, 15);
+    doc.autoTable({ head: [['Box List', 'Supplier', 'Process', 'Min', 'Max']], body: body, startY: 20 });
+    doc.save("Master_Data.pdf");
+}
+
+function exportToExcel() {
+        const data = [];
+        document.querySelectorAll(".data-row").forEach(row => {
+            if (row.style.display !== "none") {
+                const cols = row.querySelectorAll("td");
+                data.push({ 
+                    "Box List": cols[0].innerText, 
+                    "Supplier": cols[1].innerText, 
+                    "Process": cols[2].innerText, 
+                    "Min": cols[3].innerText, 
+                    "Max": cols[4].innerText 
+                });
+            }
+        });
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "MasterData");
+        XLSX.writeFile(wb, "Master_Data.xlsx");
+    }
     </script>
 </body>
 </html>

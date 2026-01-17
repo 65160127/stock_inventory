@@ -1,6 +1,55 @@
 const Product = require('../models/productModel');
 const xlsx = require('xlsx');
 
+exports.importExcel = async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: 'กรุณาแนบไฟล์ Excel' });
+        const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+        const data = xlsx.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+
+        for (const item of data) {
+            const inAmt = parseInt(item.STOCK_IN) || 0;
+            const outAmt = parseInt(item.STOCK_OUT) || 0;
+            const netChange = inAmt - outAmt;
+
+            if (netChange !== 0 || item.BOX_LIST) {
+                await Product.incrementStock({
+                    BOX_LIST: item.BOX_LIST,
+                    SUPP_CODE: item.SUPP_CODE,
+                    STOCK: netChange,
+                    MIN_STOCK: item.MIN_STOCK,
+                    MAX_STOCK: item.MAX_STOCK,
+                    Process: item.Process
+                });
+                
+                if (inAmt > 0) await Product.logHistory(item.BOX_LIST, 'in', inAmt);
+                if (outAmt > 0) await Product.logHistory(item.BOX_LIST, 'out', outAmt);
+            }
+        }
+        res.send(`<script>alert('นำเข้าและคำนวณยอดสำเร็จ');window.location.href = '/';</script>`);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+};
+
+exports.updateProducts = async (req, res) => {
+    try {
+        const { updates } = req.body;
+        await Product.updateStock(updates);
+        for (const item of updates) {
+            const type = item.change_type === 'use' ? 'out' : 'in';
+            await Product.logHistory(item.box_list, type, item.amount);
+        }
+        res.json({ message: '✅ Updated successfully' });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+};
+
+exports.getUsageReport = async (req, res) => {
+    try {
+        const { month } = req.query;
+        const report = await Product.getUsageReport(month);
+        res.json(report);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+};
+
 exports.getProducts = async (req, res) => {
     try {
         const products = await Product.getAll();
@@ -8,40 +57,16 @@ exports.getProducts = async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 };
 
-exports.importExcel = async (req, res) => {
-    try {
-        if (!req.file) return res.status(400).json({ error: 'กรุณาแนบไฟล์ Excel' });
-        const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const data = xlsx.utils.sheet_to_json(sheet);
-        for (const item of data) { await Product.upsert(item); }
-        res.send(`<script>alert('นำเข้าข้อมูลสำเร็จ ${data.length} รายการ');window.location.href = '/';</script>`);
-    } catch (err) { res.status(500).json({ error: err.message }); }
-};
-
-exports.updateProducts = async (req, res) => {
-    try {
-        await Product.updateStock(req.body.updates);
-        res.json({ message: '✅ Updated successfully' });
-    } catch (err) { res.status(500).json({ error: err.message }); }
-};
-
 exports.deleteProduct = async (req, res) => {
     try {
-        const { id } = req.params;
-        const pool = require('../config/db');
-        await pool.query('DELETE FROM products WHERE box_list = $1', [id]);
+        await Product.delete(req.params.id);
         res.json({ message: 'ลบข้อมูลสำเร็จ' });
     } catch (err) { res.status(500).json({ error: err.message }); }
 };
 
 exports.editProduct = async (req, res) => {
     try {
-        const { box_list, supp_code, min_stock, max_stock, process } = req.body;
-        const pool = require('../config/db');
-        const query = `UPDATE products SET supp_code = $1, min_stock = $2, max_stock = $3, "process" = $4 WHERE box_list = $5`;
-        const values = [supp_code, min_stock, max_stock, process, box_list];
-        await pool.query(query, values);
+        await Product.updateInfo(req.body);
         res.json({ message: '✅ แก้ไขข้อมูลสำเร็จ' });
     } catch (err) { res.status(500).json({ error: err.message }); }
 };

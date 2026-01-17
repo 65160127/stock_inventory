@@ -6,7 +6,11 @@
     <title>รายงานสรุปยอด | Inventory Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
         body { font-family: 'Sarabun', sans-serif; }
@@ -14,59 +18,40 @@
 </head>
 <body class="bg-slate-50 flex h-screen overflow-hidden">
 
-    <aside class="w-64 bg-white border-r flex flex-col justify-between shrink-0">
-        <div class="p-6">
-            <div class="flex items-center gap-3 mb-10">
-                <div class="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-100">
-                    <i class="fas fa-boxes text-white"></i>
-                </div>
-                <h1 class="font-bold text-xl text-slate-800 tracking-tight">Stock System</h1>
-            </div>
-            <nav class="space-y-2">
-                <a href="/" class="w-full flex items-center gap-3 p-3 text-slate-500 hover:bg-slate-100 rounded-xl transition-all">
-                    <i class="fas fa-chart-line w-5"></i> แผงควบคุมสต็อก
-                </a>
-                <a href="/report" class="w-full flex items-center gap-3 p-3 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-200 transition-all">
-                    <i class="fas fa-file-contract w-5"></i> สรุปยอดการใช้รายเดือน
-                </a>
-                <a href="/data" class="w-full flex items-center gap-3 p-3 text-slate-500 hover:bg-slate-100 rounded-xl transition-all">
-                    <i class="fas fa-database w-5"></i> จัดการข้อมูลหลัก
-                </a>
-            </nav>
-        </div>
-    </aside>
+    <%- include('partials/header') %>
 
     <main class="flex-1 overflow-y-auto p-8">
         <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-10">
             <div>
                 <h2 class="text-3xl font-extrabold text-slate-800">สรุปยอดการใช้งาน</h2>
-                <p class="text-slate-400">วิเคราะห์อันดับกล่องที่ถูกใช้งานมากที่สุด</p>
+                <p class="text-slate-400">วิเคราะห์สัดส่วนและอันดับการใช้งานจริงรายเดือน</p>
             </div>
             <div class="flex items-center gap-3 bg-white p-2 rounded-2xl border shadow-sm">
                 <span class="text-sm font-bold text-slate-500 ml-2">เลือกเดือน:</span>
-                <select id="reportMonth" class="bg-slate-50 border-none outline-none text-sm font-bold p-2 rounded-xl text-blue-600 cursor-pointer">
+                <select id="reportMonth" onchange="initReport()" class="bg-slate-50 border-none outline-none text-sm font-bold p-2 rounded-xl text-blue-600 cursor-pointer">
                     <option value="2026-01" selected>มกราคม 2569</option>
                     <option value="2025-12">ธันวาคม 2568</option>
+                    <option value="2025-11">พฤศจิกายน 2568</option>
                 </select>
             </div>
         </header>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-blue-600 p-6 rounded-[2.5rem] text-white shadow-xl shadow-blue-100">
+            <div class="bg-blue-600 p-6 rounded-[2.5rem] text-white shadow-xl shadow-blue-100 transition-all">
                 <p class="text-blue-100 text-xs font-bold uppercase tracking-widest mb-2">กล่องที่ใช้มากที่สุด</p>
-                <h3 id="top-box-name" class="text-2xl font-black">กำลังคำนวณ...</h3>
+                <h3 id="top-box-name" class="text-2xl font-black">-</h3>
             </div>
             <div class="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
                 <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">ยอดการใช้งานรวม (ใบ)</p>
                 <h3 id="total-usage" class="text-4xl font-black text-slate-800">0</h3>
             </div>
             <div class="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">รายการที่เบิกใช้งาน</p>
-                <h3 class="text-4xl font-black text-slate-800"><%= products.length %></h3>
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">รายการที่มีการเคลื่อนไหว</p>
+                <h3 id="active-items-count" class="text-4xl font-black text-slate-800">0</h3>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
             <div class="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm">
                 <h4 class="font-black text-slate-800 uppercase tracking-tight mb-6">กราฟเปรียบเทียบการใช้งาน (Top 5)</h4>
                 <div class="h-64">
@@ -75,80 +60,213 @@
             </div>
 
             <div class="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm">
-                <h4 class="font-black text-slate-800 uppercase tracking-tight mb-6">อันดับการใช้งานรายชิ้น</h4>
-                <div class="overflow-hidden">
-                    <table class="w-full">
-                        <thead>
-                            <tr class="text-[10px] text-slate-400 font-black uppercase border-b">
-                                <th class="text-left pb-4">อันดับ</th>
-                                <th class="text-left pb-4">รหัสกล่อง</th>
-                                <th class="text-right pb-4">จำนวนที่ใช้</th>
-                            </tr>
-                        </thead>
-                        <tbody id="reportTableBody" class="text-sm">
-                            </tbody>
-                    </table>
+                <h4 class="font-black text-slate-800 uppercase tracking-tight mb-6">สัดส่วนการใช้งาน (%)</h4>
+                <div class="h-64 flex justify-center">
+                    <canvas id="pieChart"></canvas>
                 </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm">
+            <h4 class="font-black text-slate-800 uppercase tracking-tight mb-6">อันดับการใช้งานรายชิ้น</h4>
+            <div class="overflow-hidden">
+                <table class="w-full" id="mainReportTable">
+                    <thead>
+                        <tr class="text-[10px] text-slate-400 font-black uppercase border-b">
+                            <th class="text-left pb-4">อันดับ</th>
+                            <th class="text-left pb-4">รหัสกล่อง</th>
+                            <th class="text-right pb-4">จำนวนที่ใช้จริง</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportTableBody" class="text-sm">
+                    </tbody>
+                </table>
             </div>
         </div>
     </main>
 
     <script>
-        // ข้อมูลตัวอย่าง (ในระบบจริง ข้อมูลนี้ควรดึงมาจาก API ประวัติการเบิก)
-        const productsFromDB = <%- JSON.stringify(products) %>;
-        
-        function initReport() {
-            // จำลองการคำนวณยอดใช้งาน (Random ข้อมูลเพื่อแสดงตัวอย่างกราฟ)
-            const processedData = productsFromDB.slice(0, 5).map(p => ({
-                id: p.box_list,
-                usage: Math.floor(Math.random() * 500) + 100
-            })).sort((a, b) => b.usage - a.usage);
+        let myChart = null;
+        let myPieChart = null;
 
-            renderTable(processedData);
-            renderChart(processedData);
-            
-            document.getElementById('top-box-name').innerText = processedData[0].id;
-            const total = processedData.reduce((sum, item) => sum + item.usage, 0);
-            document.getElementById('total-usage').innerText = total.toLocaleString();
+        async function initReport() {
+            const month = document.getElementById('reportMonth').value;
+            try {
+                const response = await fetch(`/api/products/usage-report?month=${month}`);
+                const data = await response.json();
+
+                if (!data || data.length === 0) {
+                    resetDisplay();
+                    return;
+                }
+
+                const processedData = data.map(item => ({
+                    id: item.box_list,
+                    usage: parseInt(item.total_usage)
+                }));
+
+                renderTable(processedData);
+                renderCharts(processedData);
+                
+                document.getElementById('top-box-name').innerText = processedData[0].id;
+                document.getElementById('active-items-count').innerText = processedData.length;
+                const total = processedData.reduce((sum, item) => sum + item.usage, 0);
+                document.getElementById('total-usage').innerText = total.toLocaleString();
+                
+            } catch (err) {
+                console.error("Fetch Error:", err);
+                alert('ไม่สามารถเชื่อมต่อข้อมูลรายงานได้');
+            }
+        }
+
+        function resetDisplay() {
+            document.getElementById('reportTableBody').innerHTML = '<tr><td colspan="3" class="p-10 text-center text-slate-400 font-bold">ไม่มีข้อมูลการเบิกใช้งานในเดือนนี้</td></tr>';
+            document.getElementById('top-box-name').innerText = "-";
+            document.getElementById('total-usage').innerText = "0";
+            document.getElementById('active-items-count').innerText = "0";
+            if (myChart) myChart.destroy();
+            if (myPieChart) myPieChart.destroy();
         }
 
         function renderTable(data) {
             const tbody = document.getElementById('reportTableBody');
             tbody.innerHTML = data.map((item, index) => `
-                <tr class="border-b last:border-none">
+                <tr class="border-b last:border-none hover:bg-slate-50 transition">
                     <td class="py-4 font-bold text-slate-400">#${index + 1}</td>
                     <td class="py-4 font-black text-slate-700">${item.id}</td>
-                    <td class="py-4 text-right font-bold text-blue-600">${item.usage.toLocaleString()}</td>
+                    <td class="py-4 text-right font-bold text-blue-600">${item.usage.toLocaleString()} ใบ</td>
                 </tr>
             `).join('');
         }
 
-        function renderChart(data) {
-            const ctx = document.getElementById('usageChart').getContext('2d');
-            new Chart(ctx, {
+        function renderCharts(data) {
+            const top5 = data.slice(0, 5);
+            const ctxBar = document.getElementById('usageChart').getContext('2d');
+            const ctxPie = document.getElementById('pieChart').getContext('2d');
+            
+            if (myChart) myChart.destroy();
+            if (myPieChart) myPieChart.destroy();
+
+            // กราฟแท่ง
+            myChart = new Chart(ctxBar, {
                 type: 'bar',
                 data: {
-                    labels: data.map(i => i.id),
+                    labels: top5.map(i => i.id),
                     datasets: [{
                         label: 'จำนวนการใช้งาน (ใบ)',
-                        data: data.map(i => i.usage),
-                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        data: top5.map(i => i.usage),
+                        backgroundColor: 'rgba(37, 99, 235, 0.2)',
                         borderColor: 'rgb(37, 99, 235)',
                         borderWidth: 2,
-                        borderRadius: 10
+                        borderRadius: 8
                     }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { beginAtZero: true, grid: { display: false } },
-                        x: { grid: { display: false } }
-                    }
-                }
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // กราฟวงกลม
+            myPieChart = new Chart(ctxPie, {
+                type: 'doughnut',
+                data: {
+                    labels: top5.map(i => i.id),
+                    datasets: [{
+                        data: top5.map(i => i.usage),
+                        backgroundColor: [
+                            '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe'
+                        ]
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
             });
         }
 
+        // --- ฟังก์ชัน Export ฉบับปรับปรุง ---
+
+        async function exportToPDF() {
+           const { value: mode } = await Swal.fire({
+        title: 'เลือกรูปแบบการ Export PDF',
+        text: "คุณต้องการรวมกราฟและยอดสรุปด้วยหรือไม่?",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#2563eb', // สีน้ำเงิน (Blue-600)
+        cancelButtonColor: '#64748b',  // สีเทา (Slate-500)
+        confirmButtonText: '<i class="fas fa-chart-pie mr-2"></i> รวมกราฟและสรุปยอด',
+        cancelButtonText: '<i class="fas fa-table mr-2"></i> เฉพาะตารางข้อมูล',
+        reverseButtons: true
+    });
+
+    const isFullReport = mode === true; // ถ้ากดปุ่มน้ำเงินจะเป็น true
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const month = document.getElementById('reportMonth').options[document.getElementById('reportMonth').selectedIndex].text;
+    
+    doc.setFontSize(20);
+    doc.text(`Usage Report: ${month}`, 14, 20);
+
+    if (isFullReport) {
+        // --- ส่วนการ Export แบบเต็มรูป ---
+        doc.setFontSize(12);
+        doc.text(`Total Usage: ${document.getElementById('total-usage').innerText} Units`, 14, 30);
+        doc.text(`Most Used: ${document.getElementById('top-box-name').innerText}`, 14, 37);
+
+        // ดึงภาพกราฟ (บาร์)
+        const canvas = document.getElementById('usageChart');
+        const imgData = canvas.toDataURL('image/png');
+        doc.addImage(imgData, 'PNG', 14, 45, 180, 60);
+        
+        doc.autoTable({ 
+            head: [['Rank', 'Box ID', 'Usage']], 
+            body: Array.from(document.querySelectorAll("#reportTableBody tr")).map(tr => Array.from(tr.querySelectorAll("td")).map(td => td.innerText)),
+            startY: 110 
+        });
+    } else {
+        // --- ส่วนการ Export เฉพาะตาราง ---
+        doc.autoTable({ 
+            head: [['Rank', 'Box ID', 'Usage']], 
+            body: Array.from(document.querySelectorAll("#reportTableBody tr")).map(tr => Array.from(tr.querySelectorAll("td")).map(td => td.innerText)),
+            startY: 30 
+        });
+    }
+    
+    doc.save(`Usage_Report_${month}.pdf`);
+}
+
+async function exportToExcel() {
+    const { value: includeSummary } = await Swal.fire({
+        title: 'ตั้งค่าไฟล์ Excel',
+        text: "ต้องการเพิ่มแถวสรุปยอดรวมไว้ที่ท้ายตารางหรือไม่?",
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonColor: '#10b981',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'เพิ่มแถวสรุปยอด',
+        cancelButtonText: 'ไม่ต้องเพิ่ม',
+        reverseButtons: true
+    });
+
+    let data = [];
+    document.querySelectorAll("#reportTableBody tr").forEach(row => {
+        const cols = row.querySelectorAll("td");
+        if(cols.length > 0) {
+            data.push({ 
+                "Rank": cols[0].innerText.replace('#', '').trim(), 
+                "Box List": cols[1].innerText.trim(), 
+                "Usage": cols[2].innerText.replace(' ใบ', '').trim() 
+            });
+        }
+    });
+
+    if (includeSummary) {
+        data.push({}); // แถวว่าง
+        data.push({ "Rank": "SUMMARY", "Box List": "Total Usage", "Usage": document.getElementById('total-usage').innerText });
+        data.push({ "Rank": "SUMMARY", "Box List": "Top Item", "Usage": document.getElementById('top-box-name').innerText });
+    }
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Report");
+    XLSX.writeFile(wb, `Usage_Report_${document.getElementById('reportMonth').value}.xlsx`);
+}
         window.onload = initReport;
     </script>
 </body>

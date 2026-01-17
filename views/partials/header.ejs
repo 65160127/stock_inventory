@@ -1,0 +1,46 @@
+<aside class="w-64 bg-white border-r flex flex-col justify-between p-6 shrink-0">
+    <div>
+        <div class="flex items-center gap-3 mb-10">
+            <div class="bg-blue-600 p-2 rounded-lg"><i class="fas fa-boxes text-white"></i></div>
+            <h1 class="font-bold text-xl text-slate-800">Stock Inventory</h1>
+        </div>
+        <nav class="space-y-2">
+            <a href="/" id="nav-dashboard" class="flex items-center gap-3 p-3 text-slate-500 hover:bg-slate-100 rounded-xl transition">
+                <i class="fas fa-chart-line"></i> แผงควบคุมสต็อก
+            </a>
+            <a href="/report" id="nav-report" class="flex items-center gap-3 p-3 text-slate-500 hover:bg-slate-100 rounded-xl transition">
+                <i class="fas fa-file-contract"></i> สรุปยอดการใช้รายเดือน
+            </a>
+            <a href="/data" id="nav-data" class="flex items-center gap-3 p-3 text-slate-500 hover:bg-slate-100 rounded-xl transition">
+                <i class="fas fa-database"></i> จัดการข้อมูลหลัก
+            </a>
+        </nav>
+    </div>
+    <div id="export-buttons" class="pt-6 border-t flex gap-2"> 
+        <button onclick="triggerExport('PDF')" class="flex-1 p-2 bg-slate-100 rounded-lg text-sm font-medium hover:bg-red-50 hover:text-red-600 transition">
+            <i class="fas fa-file-pdf mr-2"></i>PDF
+        </button>
+        <button onclick="triggerExport('Excel')" class="flex-1 p-2 bg-slate-100 rounded-lg text-sm font-medium hover:bg-green-50 hover:text-green-600 transition">
+            <i class="fas fa-file-excel mr-2"></i>EXCEL
+        </button>
+    </div>
+</aside>
+
+<script>
+    const path = window.location.pathname;
+    const activeClass = ["bg-blue-600", "text-white", "shadow-lg", "shadow-blue-200"];
+    
+    if (path === '/') document.getElementById('nav-dashboard')?.classList.add(...activeClass);
+    else if (path === '/report') document.getElementById('nav-report')?.classList.add(...activeClass);
+    else if (path === '/data') document.getElementById('nav-data')?.classList.add(...activeClass);
+
+    function triggerExport(type) {
+        if (type === 'PDF') {
+            if (typeof exportToPDF === 'function') exportToPDF();
+            else alert('หน้าจอนี้ยังไม่รองรับ PDF');
+        } else {
+            if (typeof exportToExcel === 'function') exportToExcel();
+            else alert('หน้าจอนี้ยังไม่รองรับ Excel');
+        }
+    }
+</script>

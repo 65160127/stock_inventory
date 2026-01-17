@@ -9,5 +9,6 @@ router.patch('/update-stock', productController.updateProducts);
 router.post('/upload', upload.single('file'), productController.importExcel);
 router.delete('/:id', productController.deleteProduct);
 router.put('/edit', productController.editProduct);
+router.get('/usage-report', productController.getUsageReport);
 
 module.exports = router;
