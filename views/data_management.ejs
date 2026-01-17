@@ -7,25 +7,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="bg-slate-50 flex h-screen">
-    <aside class="w-64 bg-white border-r flex flex-col justify-between p-6">
-        <div>
-            <div class="flex items-center gap-3 mb-10">
-                <div class="bg-blue-600 p-2 rounded-lg"><i class="fas fa-boxes text-white"></i></div>
-                <h1 class="font-bold text-xl text-slate-800">Inventory Pro</h1>
-            </div>
-            <nav class="space-y-2">
-                <a href="/" class="flex items-center gap-3 p-3 text-slate-500 hover:bg-slate-100 rounded-xl">
-                    <i class="fas fa-chart-line"></i> แผงควบคุมสต็อก
-                </a>
-                <a href="/data" class="flex items-center gap-3 p-3 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-200">
-                    <i class="fas fa-database"></i> จัดการข้อมูลหลัก
-                </a>
-                <a href="#" class="flex items-center gap-3 p-3 text-slate-500 hover:bg-slate-100 rounded-xl transition">
-                    <i class="fas fa-history"></i> ประวัติความเคลื่อนไหว
-                </a>
-            </nav>
-        </div>
-    </aside>
+    
+    <%- include('partials/header') %>
 
     <main class="flex-1 p-8 overflow-y-auto">
         <header class="flex justify-between items-center mb-10">
@@ -76,7 +59,7 @@
                             <td class="p-4 text-center text-slate-400"><%= product.max_stock || '-' %></td>
                             <td class="p-4 text-center space-x-2">
                                 <button onclick="openEditModal('<%= JSON.stringify(product).replace(/'/g, '&#39;') %>')" class="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition">
-                                    <i class="fas fa-edit"></i>
+                                     <i class="fas fa-edit"></i>
                                 </button>
                                 <button onclick="deleteItem('<%= product.box_list %>')" class="text-red-600 hover:bg-red-50 p-2 rounded-lg transition">
                                     <i class="fas fa-trash-alt"></i>
@@ -135,18 +118,12 @@
         }
 
         async function deleteItem(boxList) {
-            if (confirm(`⚠️ คำเตือน: คุณต้องการลบสินค้า "${boxList}" ออกจากฐานข้อมูลใช่หรือไม่? ข้อมูลสต็อกจะถูกลบออกทั้งหมด`)) {
+            if (confirm(`⚠️ คำเตือน: คุณต้องการลบสินค้า "${boxList}" ออกจากฐานข้อมูลใช่หรือไม่?`)) {
                 try {
                     const res = await fetch(`/api/products/${boxList}`, { method: 'DELETE' });
-                    if (res.ok) {
-                        alert('ลบข้อมูลสำเร็จ');
-                        location.reload();
-                    } else {
-                        alert('ไม่สามารถลบข้อมูลได้');
-                    }
-                } catch (err) {
-                    alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
-                }
+                    if (res.ok) { alert('ลบข้อมูลสำเร็จ'); location.reload(); }
+                    else { alert('ไม่สามารถลบข้อมูลได้'); }
+                } catch (err) { alert('เกิดข้อผิดพลาดในการเชื่อมต่อ'); }
             }
         }
 
@@ -160,9 +137,7 @@
             document.getElementById('editModal').classList.remove('hidden');
         }
 
-        function closeEditModal() {
-            document.getElementById('editModal').classList.add('hidden');
-        }
+        function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); }
 
         async function saveEdit() {
             const data = {
@@ -172,24 +147,15 @@
                 min_stock: document.getElementById('editMin').value,
                 max_stock: document.getElementById('editMax').value
             };
-            
             try {
                 const res = await fetch('/api/products/edit', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                
-                if (res.ok) {
-                    alert('บันทึกการเปลี่ยนแปลงสำเร็จ');
-                    location.reload();
-                } else {
-                    const error = await res.json();
-                    alert('Error: ' + error.error);
-                }
-            } catch (err) {
-                alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
-            }
+                if (res.ok) { alert('บันทึกการเปลี่ยนแปลงสำเร็จ'); location.reload(); }
+                else { const error = await res.json(); alert('Error: ' + error.error); }
+            } catch (err) { alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้'); }
         }
     </script>
 </body>

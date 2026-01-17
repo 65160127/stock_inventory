@@ -1,0 +1,40 @@
+<aside class="w-64 bg-white border-r flex flex-col justify-between p-6">
+    <div>
+        <div class="flex items-center gap-3 mb-10">
+            <div class="bg-blue-600 p-2 rounded-lg"><i class="fas fa-boxes text-white"></i></div>
+            <h1 class="font-bold text-xl text-slate-800">Inventory Pro</h1>
+        </div>
+        <nav class="space-y-2">
+            <a href="/" id="nav-dashboard" class="flex items-center gap-3 p-3 text-slate-500 hover:bg-slate-100 rounded-xl transition">
+                <i class="fas fa-chart-line"></i> แผงควบคุมสต็อก
+            </a>
+            <a href="/data" id="nav-data" class="flex items-center gap-3 p-3 text-slate-500 hover:bg-slate-100 rounded-xl transition">
+                <i class="fas fa-database"></i> จัดการข้อมูลหลัก
+            </a>
+            <a href="#" class="flex items-center gap-3 p-3 text-slate-500 hover:bg-slate-100 rounded-xl transition">
+                <i class="fas fa-history"></i> ประวัติความเคลื่อนไหว
+            </a>
+        </nav>
+    </div>
+    <div id="export-buttons" class="pt-6 border-t flex gap-2 hidden">
+        <button onclick="exportToPDF()" class="flex-1 p-2 bg-slate-100 rounded-lg text-sm font-medium hover:bg-red-50 hover:text-red-600 transition">
+            <i class="fas fa-file-pdf mr-2"></i>PDF
+        </button>
+        <button onclick="exportToExcel()" class="flex-1 p-2 bg-slate-100 rounded-lg text-sm font-medium hover:bg-green-50 hover:text-green-600 transition">
+            <i class="fas fa-file-excel mr-2"></i>EXCEL
+        </button>
+    </div>
+</aside>
+
+<script>
+    // สลับสีเมนูตามหน้าที่เปิดอยู่
+    const path = window.location.pathname;
+    if (path === '/') {
+        const btn = document.getElementById('nav-dashboard');
+        btn.className = "flex items-center gap-3 p-3 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-200";
+        document.getElementById('export-buttons').classList.remove('hidden');
+    } else if (path === '/data') {
+        const btn = document.getElementById('nav-data');
+        btn.className = "flex items-center gap-3 p-3 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-200";
+    }
+</script>

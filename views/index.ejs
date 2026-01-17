@@ -7,37 +7,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body class="bg-slate-50 flex h-screen">
 
-    <aside class="w-64 bg-white border-r flex flex-col justify-between">
-        <div class="p-6">
-            <div class="flex items-center gap-3 mb-10">
-                <div class="bg-blue-600 p-2 rounded-lg"><i class="fas fa-boxes text-white"></i></div>
-                <h1 class="font-bold text-xl text-slate-800">Stock Inventory</h1>
-            </div>
-            <nav class="space-y-2">
-                <a href="/" class="flex items-center gap-3 p-3 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-200">
-                    <i class="fas fa-chart-line"></i> แผงควบคุมสต็อก
-                </a>
-                <a href="/data" class="flex items-center gap-3 p-3 text-slate-500 hover:bg-slate-100 rounded-xl transition">
-                    <i class="fas fa-database"></i> จัดการข้อมูลหลัก
-                </a>
-                <a href="#" class="flex items-center gap-3 p-3 text-slate-500 hover:bg-slate-100 rounded-xl transition">
-                    <i class="fas fa-history"></i> ประวัติความเคลื่อนไหว
-                </a>
-            </nav>
-        </div>
-        <div class="p-6 border-t flex gap-2">
-            <button onclick="exportToPDF()" class="flex-1 p-2 bg-slate-100 rounded-lg text-sm font-medium hover:bg-red-50 hover:text-red-600 transition">
-                <i class="fas fa-file-pdf mr-2"></i>PDF
-            </button>
-        <button onclick="exportToExcel()" class="flex-1 p-2 bg-slate-100 rounded-lg text-sm font-medium hover:bg-green-50 hover:text-green-600 transition">
-                <i class="fas fa-file-excel mr-2"></i>EXCEL
-        </button>
-</div>
-    </aside>
+    <%- include('partials/header') %>
 
     <main class="flex-1 p-8 overflow-y-auto">
         <header class="flex justify-between items-center mb-10">
@@ -50,8 +24,8 @@
                         <i class="fas fa-list mr-2"></i>มุมมองตาราง
                     </button>
                     <button onclick="switchView('grid')" id="btnGrid" class="px-4 py-2 bg-white text-slate-500 border rounded-lg text-sm font-bold hover:bg-slate-50 transition">
-                         <i class="fas fa-th-large mr-2"></i>มุมมอง Card
-                     </button>                  
+                        <i class="fas fa-th-large mr-2"></i>มุมมอง Card
+                    </button>                  
                 </div>
             </div>
             <div class="flex items-center gap-4">
@@ -69,7 +43,7 @@
             </div>
         </header>
 
-        <div id="filterBarContainer" class="mb-6 bg-white p-4 rounded-2xl border shadow-sm flex flex-wrap gap-6 items-center">           
+        <div id="filterBarContainer" class="mb-6 bg-white p-4 rounded-2xl border shadow-sm flex flex-wrap gap-6 items-center">          
             <div class="flex items-center gap-2">
                 <span class="text-sm font-bold text-slate-500">Supp Code:</span>
                 <select id="suppFilter" onchange="applyAllFilters()" class="p-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50">
@@ -81,11 +55,11 @@
             </div>
 
             <div class="flex bg-slate-100 p-1 rounded-xl gap-1">
-    <button onclick="setStatusAndFilter('all')" id="statusAll" class="filter-status-btn px-4 py-1.5 rounded-lg text-sm font-bold bg-blue-600 text-white shadow-sm transition-all">ทั้งหมด</button>
-    <button onclick="setStatusAndFilter('normal')" id="statusNormal" class="filter-status-btn px-4 py-1.5 rounded-lg text-sm font-bold text-slate-500 hover:bg-white transition-all">สต็อกปกติ</button>
-    <button onclick="setStatusAndFilter('low')" id="statusLow" class="filter-status-btn px-4 py-1.5 rounded-lg text-sm font-bold text-slate-500 hover:bg-white transition-all">ต้องเติม</button>
-    <button onclick="setStatusAndFilter('over')" id="statusOver" class="filter-status-btn px-4 py-1.5 rounded-lg text-sm font-bold text-slate-500 hover:bg-white transition-all">ของล้น</button>
-</div>
+                <button onclick="setStatusAndFilter('all')" id="statusAll" class="filter-status-btn px-4 py-1.5 rounded-lg text-sm font-bold bg-blue-600 text-white shadow-sm transition-all">ทั้งหมด</button>
+                <button onclick="setStatusAndFilter('normal')" id="statusNormal" class="filter-status-btn px-4 py-1.5 rounded-lg text-sm font-bold text-slate-500 hover:bg-white transition-all">สต็อกปกติ</button>
+                <button onclick="setStatusAndFilter('low')" id="statusLow" class="filter-status-btn px-4 py-1.5 rounded-lg text-sm font-bold text-slate-500 hover:bg-white transition-all">ต้องเติม</button>
+                <button onclick="setStatusAndFilter('over')" id="statusOver" class="filter-status-btn px-4 py-1.5 rounded-lg text-sm font-bold text-slate-500 hover:bg-white transition-all">ของล้น</button>
+            </div>
 
             <button onclick="location.reload()" class="ml-auto text-xs text-blue-600 hover:text-blue-800 font-medium">
                 <i class="fas fa-sync-alt mr-1"></i> ล้างการกรอง
@@ -119,9 +93,7 @@
                     <div class="flex justify-between items-end mt-4">
                         <div>
                             <p class="text-slate-400 text-xs font-semibold">คงเหลือ</p>
-                            <span class="text-5xl font-black 
-                                <%= product.stock <= product.min_stock ? 'text-red-500' : 
-                                   (product.max_stock && product.stock > product.max_stock ? 'text-orange-500' : 'text-blue-600') %>">
+                            <span class="text-5xl font-black <%= product.stock <= product.min_stock ? 'text-red-500' : (product.max_stock && product.stock > product.max_stock ? 'text-orange-500' : 'text-blue-600') %>">
                                 <%= product.stock %>
                             </span>
                         </div>
@@ -158,9 +130,7 @@
                             <td class="p-4 font-bold text-slate-800"><%= product.box_list %></td>
                             <td class="p-4 text-slate-500 uppercase"><%= product.supp_code %></td>
                             <td class="p-4 text-center">
-                                <span class="text-lg font-black 
-                                    <%= product.stock <= product.min_stock ? 'text-red-500' : 
-                                       (product.max_stock && product.stock > product.max_stock ? 'text-orange-500' : 'text-blue-600') %>">
+                                <span class="text-lg font-black <%= product.stock <= product.min_stock ? 'text-red-500' : (product.max_stock && product.stock > product.max_stock ? 'text-orange-500' : 'text-blue-600') %>">
                                     <%= product.stock %>
                                 </span>
                             </td>
@@ -202,7 +172,7 @@
     </div>
 
 <script>
-    var selectedBoxId = ""; 
+    var selectedBoxId = "";
     var currentStockValue = 0;
     var currentMinStock = 0;
     var currentStatusFilter = 'all';
@@ -231,7 +201,6 @@
         currentStatusFilter = status;
         const btns = document.querySelectorAll('.filter-status-btn');
         btns.forEach(btn => btn.className = "filter-status-btn px-4 py-1.5 rounded-lg text-sm font-bold text-slate-500 hover:bg-white transition-all");
-        
         const activeBtnId = 'status' + status.charAt(0).toUpperCase() + status.slice(1);
         document.getElementById(activeBtnId).className = "filter-status-btn px-4 py-1.5 rounded-lg text-sm font-bold bg-blue-600 text-white shadow-sm transition-all";
         applyAllFilters();
@@ -256,11 +225,8 @@
             if (currentStatusFilter === 'normal') matchStatus = (stock > min && stock <= max);
             else if (currentStatusFilter === 'low') matchStatus = (stock <= min);
             else if (currentStatusFilter === 'over') matchStatus = (stock > max);
-            if (matchSearch && matchSupp && matchStatus) {
-                item.style.display = "";
-            } else {
-                item.style.display = "none";
-            }
+
+            item.style.display = (matchSearch && matchSupp && matchStatus) ? "" : "none";
         });
     }
 
@@ -281,7 +247,6 @@
         if (!amount || amount <= 0) return alert('กรุณาระบุจำนวนที่ถูกต้อง');
         let newStock = (type === 'update') ? currentStockValue + amount : currentStockValue - amount;
         if (newStock < 0) return alert('สต็อกไม่เพียงพอต่อการใช้งาน');
-
         try {
             const response = await fetch('/api/products/update-stock', {
                 method: 'PATCH',
@@ -292,65 +257,49 @@
         } catch (err) { alert('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้'); }
     }
 
-    // Export to PDF & Excel
-
     function getFilteredData() {
-    const rows = document.querySelectorAll("#tableView tbody tr");
-    const data = [];
-    rows.forEach(row => {
-        if (row.style.display !== "none") { // เอาเฉพาะตัวที่โชว์อยู่
-            const cols = row.querySelectorAll("td");
-            data.push({
-                "Box List": cols[0].innerText,
-                "Supp Code": cols[1].innerText,
-                "คงเหลือ": cols[2].innerText,
-                "Min/Max Limit": cols[3].innerText
-            });
-        }
-    });
-    return data;
-}
+        const rows = document.querySelectorAll("#tableView tbody tr");
+        const data = [];
+        rows.forEach(row => {
+            if (row.style.display !== "none") {
+                const cols = row.querySelectorAll("td");
+                data.push({
+                    "Box List": cols[0].innerText,
+                    "Supp Code": cols[1].innerText,
+                    "คงเหลือ": cols[2].innerText,
+                    "Min/Max Limit": cols[3].innerText
+                });
+            }
+        });
+        return data;
+    }
 
-// Export Excel
-function exportToExcel() {
-    const data = getFilteredData();
-    if (data.length === 0) return alert("ไม่มีข้อมูลสำหรับการ Export");
+    function exportToExcel() {
+        const data = getFilteredData();
+        if (data.length === 0) return alert("ไม่มีข้อมูลสำหรับการ Export");
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Stock_Inventory");
+        const date = new Date().toISOString().split('T')[0];
+        XLSX.writeFile(workbook, `Stock_Report_${date}.xlsx`);
+    }
 
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Stock_Inventory");
-    
-    const date = new Date().toISOString().split('T')[0];
-    XLSX.writeFile(workbook, `Stock_Report_${date}.xlsx`);
-}
-
-// Export PDF
-function exportToPDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    const data = getFilteredData();
-    
-    if (data.length === 0) return alert("ไม่มีข้อมูลสำหรับการ Export");
-
-    const body = data.map(item => [
-        item["Box List"],
-        item["Supp Code"],
-        item["คงเหลือ"],
-        item["Min/Max Limit"]
-    ]);
-
-    doc.text("Stock Inventory Report", 14, 15);
-    doc.autoTable({
-        head: [['Box List', 'Supp Code', 'Stock', 'Min / Max']],
-        body: body,
-        startY: 20,
-        styles: { font: 'courier' }
-    });
-
-    const date = new Date().toISOString().split('T')[0];
-    doc.save(`Stock_Report_${date}.pdf`);
-}
-
+    function exportToPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const data = getFilteredData();
+        if (data.length === 0) return alert("ไม่มีข้อมูลสำหรับการ Export");
+        const body = data.map(item => [item["Box List"], item["Supp Code"], item["คงเหลือ"], item["Min/Max Limit"]]);
+        doc.text("Stock Inventory Report", 14, 15);
+        doc.autoTable({
+            head: [['Box List', 'Supp Code', 'Stock', 'Min / Max']],
+            body: body,
+            startY: 20,
+            styles: { font: 'courier' }
+        });
+        const date = new Date().toISOString().split('T')[0];
+        doc.save(`Stock_Report_${date}.pdf`);
+    }
 </script>
 </body>
 </html>
