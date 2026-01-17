@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>รายงานสรุปยอด | Inventory Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
+        body { font-family: 'Sarabun', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-white border-r flex flex-col justify-between shrink-0">
+        <div class="p-6">
+            <div class="flex items-center gap-3 mb-10">
+                <div class="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-100">
+                    <i class="fas fa-boxes text-white"></i>
+                </div>
+                <h1 class="font-bold text-xl text-slate-800 tracking-tight">Stock System</h1>
+            </div>
+            <nav class="space-y-2">
+                <a href="/" class="w-full flex items-center gap-3 p-3 text-slate-500 hover:bg-slate-100 rounded-xl transition-all">
+                    <i class="fas fa-chart-line w-5"></i> แผงควบคุมสต็อก
+                </a>
+                <a href="/report" class="w-full flex items-center gap-3 p-3 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-200 transition-all">
+                    <i class="fas fa-file-contract w-5"></i> สรุปยอดการใช้รายเดือน
+                </a>
+                <a href="/data" class="w-full flex items-center gap-3 p-3 text-slate-500 hover:bg-slate-100 rounded-xl transition-all">
+                    <i class="fas fa-database w-5"></i> จัดการข้อมูลหลัก
+                </a>
+            </nav>
+        </div>
+    </aside>
+
+    <main class="flex-1 overflow-y-auto p-8">
+        <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-10">
+            <div>
+                <h2 class="text-3xl font-extrabold text-slate-800">สรุปยอดการใช้งาน</h2>
+                <p class="text-slate-400">วิเคราะห์อันดับกล่องที่ถูกใช้งานมากที่สุด</p>
+            </div>
+            <div class="flex items-center gap-3 bg-white p-2 rounded-2xl border shadow-sm">
+                <span class="text-sm font-bold text-slate-500 ml-2">เลือกเดือน:</span>
+                <select id="reportMonth" class="bg-slate-50 border-none outline-none text-sm font-bold p-2 rounded-xl text-blue-600 cursor-pointer">
+                    <option value="2026-01" selected>มกราคม 2569</option>
+                    <option value="2025-12">ธันวาคม 2568</option>
+                </select>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-blue-600 p-6 rounded-[2.5rem] text-white shadow-xl shadow-blue-100">
+                <p class="text-blue-100 text-xs font-bold uppercase tracking-widest mb-2">กล่องที่ใช้มากที่สุด</p>
+                <h3 id="top-box-name" class="text-2xl font-black">กำลังคำนวณ...</h3>
+            </div>
+            <div class="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">ยอดการใช้งานรวม (ใบ)</p>
+                <h3 id="total-usage" class="text-4xl font-black text-slate-800">0</h3>
+            </div>
+            <div class="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">รายการที่เบิกใช้งาน</p>
+                <h3 class="text-4xl font-black text-slate-800"><%= products.length %></h3>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            <div class="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm">
+                <h4 class="font-black text-slate-800 uppercase tracking-tight mb-6">กราฟเปรียบเทียบการใช้งาน (Top 5)</h4>
+                <div class="h-64">
+                    <canvas id="usageChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm">
+                <h4 class="font-black text-slate-800 uppercase tracking-tight mb-6">อันดับการใช้งานรายชิ้น</h4>
+                <div class="overflow-hidden">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="text-[10px] text-slate-400 font-black uppercase border-b">
+                                <th class="text-left pb-4">อันดับ</th>
+                                <th class="text-left pb-4">รหัสกล่อง</th>
+                                <th class="text-right pb-4">จำนวนที่ใช้</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportTableBody" class="text-sm">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // ข้อมูลตัวอย่าง (ในระบบจริง ข้อมูลนี้ควรดึงมาจาก API ประวัติการเบิก)
+        const productsFromDB = <%- JSON.stringify(products) %>;
+        
+        function initReport() {
+            // จำลองการคำนวณยอดใช้งาน (Random ข้อมูลเพื่อแสดงตัวอย่างกราฟ)
+            const processedData = productsFromDB.slice(0, 5).map(p => ({
+                id: p.box_list,
+                usage: Math.floor(Math.random() * 500) + 100
+            })).sort((a, b) => b.usage - a.usage);
+
+            renderTable(processedData);
+            renderChart(processedData);
+            
+            document.getElementById('top-box-name').innerText = processedData[0].id;
+            const total = processedData.reduce((sum, item) => sum + item.usage, 0);
+            document.getElementById('total-usage').innerText = total.toLocaleString();
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('reportTableBody');
+            tbody.innerHTML = data.map((item, index) => `
+                <tr class="border-b last:border-none">
+                    <td class="py-4 font-bold text-slate-400">#${index + 1}</td>
+                    <td class="py-4 font-black text-slate-700">${item.id}</td>
+                    <td class="py-4 text-right font-bold text-blue-600">${item.usage.toLocaleString()}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderChart(data) {
+            const ctx = document.getElementById('usageChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(i => i.id),
+                    datasets: [{
+                        label: 'จำนวนการใช้งาน (ใบ)',
+                        data: data.map(i => i.usage),
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        borderColor: 'rgb(37, 99, 235)',
+                        borderWidth: 2,
+                        borderRadius: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { display: false } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        window.onload = initReport;
+    </script>
+</body>
+</html>

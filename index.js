@@ -35,6 +35,17 @@ app.get('/data', async (req, res) => {
     }
 });
 
+app.get('/report', async (req, res) => {
+    try {
+        const Product = require('./models/productModel');
+        const products = await Product.getAll();
+        // ในที่นี้ส่ง products ไปเพื่อใช้สร้างรายการเลือก หรือคำนวณสถิติเบื้องต้น
+        res.render('monthly_report', { products: products }); 
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+});
+
 // เรียกใช้ Routes
 app.use('/api/products', productRoutes);
 
