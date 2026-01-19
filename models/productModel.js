@@ -65,7 +65,7 @@ const Product = {
         return result.rows;
     },
 
-    getHistoryFiltered: async (filterType) => {
+    getHistoryFiltered: async (filterType, limit = 15, offset = 0) => {
         let dateCondition = "";
         if (filterType === 'today') {
             dateCondition = "WHERE h.created_at >= CURRENT_DATE";
@@ -80,9 +80,10 @@ const Product = {
             FROM stock_history h
             LEFT JOIN products p ON h.box_list = p.box_list
             ${dateCondition}
-            ORDER BY h.created_at DESC`;
+            ORDER BY h.created_at DESC
+            LIMIT $1 OFFSET $2`; // เพิ่มการจำกัดจำนวนและจุดเริ่มต้น
         
-        const result = await pool.query(query);
+        const result = await pool.query(query, [limit, offset]);
         return result.rows;
     },
 

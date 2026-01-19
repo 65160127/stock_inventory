@@ -111,7 +111,10 @@ exports.getHistoryPage = async (req, res) => {
 exports.getHistoryData = async (req, res) => {
     try {
         const filter = req.query.filter || 'all';
-        const history = await Product.getHistoryFiltered(filter);
+        const limit = 15; // กำหนดค่าคงที่ 15 รายการ
+        const offset = parseInt(req.query.offset) || 0; // รับค่าจุดเริ่มจาก Frontend
+        
+        const history = await Product.getHistoryFiltered(filter, limit, offset);
         res.json(history);
     } catch (err) {
         res.status(500).json({ error: err.message });

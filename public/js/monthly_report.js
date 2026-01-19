@@ -1,20 +1,36 @@
 let myChart = null;
 let myPieChart = null;
+let myFullChart = null; 
+let allProcessedData = [];
 
 async function initReport() {
     const month = document.getElementById('reportMonth').value;
     try {
         const response = await fetch(`/api/products/usage-report?month=${month}`);
         const data = await response.json();
-        if (!data || data.length === 0) { resetDisplay(); return; }
-        const processedData = data.map(item => ({ id: item.box_list, usage: parseInt(item.total_usage) }));
-        renderTable(processedData);
-        renderCharts(processedData);
-        document.getElementById('top-box-name').innerText = processedData[0].id;
-        document.getElementById('active-items-count').innerText = processedData.length;
-        const total = processedData.reduce((sum, item) => sum + item.usage, 0);
+        
+        if (!data || data.length === 0) { 
+            resetDisplay(); 
+            return; 
+        }
+
+        // เก็บข้อมูลทั้งหมดที่ได้จาก API
+        allProcessedData = data.map(item => ({ 
+            id: item.box_list, 
+            usage: parseInt(item.total_usage) 
+        }));
+
+        renderTable(allProcessedData);
+        renderCharts(allProcessedData);
+        
+        document.getElementById('top-box-name').innerText = allProcessedData[0].id;
+        document.getElementById('active-items-count').innerText = allProcessedData.length;
+        const total = allProcessedData.reduce((sum, item) => sum + item.usage, 0);
         document.getElementById('total-usage').innerText = total.toLocaleString();
-    } catch (err) { alert('ไม่สามารถเชื่อมต่อข้อมูลรายงานได้'); }
+    } catch (err) { 
+        console.error(err);
+        Swal.fire('ผิดพลาด', 'ไม่สามารถเชื่อมต่อข้อมูลรายงานได้', 'error'); 
+    }
 }
 
 function resetDisplay() {
@@ -22,8 +38,11 @@ function resetDisplay() {
     document.getElementById('top-box-name').innerText = "-";
     document.getElementById('total-usage').innerText = "0";
     document.getElementById('active-items-count').innerText = "0";
+    
     if (myChart) myChart.destroy();
     if (myPieChart) myPieChart.destroy();
+    if (myFullChart) myFullChart.destroy();
+    allProcessedData = [];
 }
 
 function renderTable(data) {
@@ -41,8 +60,10 @@ function renderCharts(data) {
     const top5 = data.slice(0, 5);
     const ctxBar = document.getElementById('usageChart').getContext('2d');
     const ctxPie = document.getElementById('pieChart').getContext('2d');
+    
     if (myChart) myChart.destroy();
     if (myPieChart) myPieChart.destroy();
+    
     myChart = new Chart(ctxBar, {
         type: 'bar',
         data: {
@@ -58,6 +79,7 @@ function renderCharts(data) {
         },
         options: { responsive: true, maintainAspectRatio: false }
     });
+
     myPieChart = new Chart(ctxPie, {
         type: 'doughnut',
         data: {
@@ -71,6 +93,68 @@ function renderCharts(data) {
     });
 }
 
+// ฟังก์ชันเปิด Modal และวาดกราฟแสดงข้อมูลทั้งหมด
+function openFullChartModal() {
+    if (allProcessedData.length === 0) {
+        Swal.fire('ไม่มีข้อมูล', 'ไม่พบรายการใช้งานสำหรับแสดงกราฟ', 'info');
+        return;
+    }
+
+    const modal = document.getElementById('fullChartModal');
+    const monthText = document.getElementById('reportMonth').options[document.getElementById('reportMonth').selectedIndex].text;
+    document.getElementById('fullChartSubtitle').innerText = `รายงานสรุปประจำเดือน ${monthText}`;
+    
+    modal.classList.remove('hidden');
+    // เลื่อน scale ขึ้นเล็กน้อยเพื่อให้เกิด Animation
+    setTimeout(() => {
+        modal.querySelector('div').classList.remove('scale-95');
+    }, 10);
+
+    const ctx = document.getElementById('fullUsageChart').getContext('2d');
+    if (myFullChart) myFullChart.destroy();
+    
+    myFullChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: allProcessedData.map(i => i.id),
+            datasets: [{
+                label: 'จำนวนการใช้งาน (ใบ)',
+                data: allProcessedData.map(i => i.usage),
+                backgroundColor: 'rgba(37, 99, 235, 0.5)',
+                borderColor: 'rgb(37, 99, 235)',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { beginAtZero: true },
+                x: { 
+                    ticks: {
+                        autoSkip: false, // บังคับให้โชว์รหัสกล่องทั้งหมด
+                        maxRotation: 45,
+                        minRotation: 45
+                    }
+                }
+            }
+        }
+    });
+}
+
+function closeFullChartModal() {
+    const modal = document.getElementById('fullChartModal');
+    modal.querySelector('div').classList.add('scale-95');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 300);
+}
+
+// ระบบ Export (เหมือนเดิมแต่ตัดส่วนเกินออก)
 async function exportToPDF() {
     const { value: mode } = await Swal.fire({
         title: 'เลือกรูปแบบการ Export PDF',
@@ -79,24 +163,37 @@ async function exportToPDF() {
         showCancelButton: true,
         confirmButtonColor: '#2563eb',
         cancelButtonColor: '#64748b',
-        confirmButtonText: '<i class="fas fa-chart-pie mr-2"></i> รวมกราฟและสรุปยอด',
-        cancelButtonText: '<i class="fas fa-table mr-2"></i> เฉพาะตารางข้อมูล',
+        confirmButtonText: 'รวมกราฟและสรุปยอด',
+        cancelButtonText: 'เฉพาะตารางข้อมูล',
         reverseButtons: true
     });
-    const isFullReport = mode === true;
+    
+    if (mode === undefined) return; // กดยกเลิก
+    
+    const isFullReport = mode;
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const month = document.getElementById('reportMonth').options[document.getElementById('reportMonth').selectedIndex].text;
+    
     doc.setFontSize(20);
     doc.text(`Usage Report: ${month}`, 14, 20);
+    
     if (isFullReport) {
         doc.setFontSize(12);
         doc.text(`Total Usage: ${document.getElementById('total-usage').innerText} Units`, 14, 30);
         const imgData = document.getElementById('usageChart').toDataURL('image/png');
         doc.addImage(imgData, 'PNG', 14, 45, 180, 60);
-        doc.autoTable({ startY: 110, head: [['Rank', 'Box ID', 'Usage']], body: Array.from(document.querySelectorAll("#reportTableBody tr")).map(tr => Array.from(tr.querySelectorAll("td")).map(td => td.innerText)) });
+        doc.autoTable({ 
+            startY: 110, 
+            head: [['Rank', 'Box ID', 'Usage']], 
+            body: Array.from(document.querySelectorAll("#reportTableBody tr")).map(tr => Array.from(tr.querySelectorAll("td")).map(td => td.innerText)) 
+        });
     } else {
-        doc.autoTable({ startY: 30, head: [['Rank', 'Box ID', 'Usage']], body: Array.from(document.querySelectorAll("#reportTableBody tr")).map(tr => Array.from(tr.querySelectorAll("td")).map(td => td.innerText)) });
+        doc.autoTable({ 
+            startY: 30, 
+            head: [['Rank', 'Box ID', 'Usage']], 
+            body: Array.from(document.querySelectorAll("#reportTableBody tr")).map(tr => Array.from(tr.querySelectorAll("td")).map(td => td.innerText)) 
+        });
     }
     doc.save(`Usage_Report_${month}.pdf`);
 }
@@ -113,20 +210,30 @@ async function exportToExcel() {
         cancelButtonText: 'ไม่ต้องเพิ่ม',
         reverseButtons: true
     });
+    
+    if (includeSummary === undefined) return;
+
     let data = [];
     document.querySelectorAll("#reportTableBody tr").forEach(row => {
         const cols = row.querySelectorAll("td");
         if(cols.length > 0) {
-            data.push({ "Rank": cols[0].innerText.replace('#', '').trim(), "Box List": cols[1].innerText.trim(), "Usage": cols[2].innerText.replace(' ใบ', '').trim() });
+            data.push({ 
+                "Rank": cols[0].innerText.replace('#', '').trim(), 
+                "Box List": cols[1].innerText.trim(), 
+                "Usage": cols[2].innerText.replace(' ใบ', '').trim() 
+            });
         }
     });
+
     if (includeSummary) {
         data.push({});
         data.push({ "Rank": "SUMMARY", "Box List": "Total Usage", "Usage": document.getElementById('total-usage').innerText });
     }
+
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Report");
     XLSX.writeFile(wb, `Usage_Report_${document.getElementById('reportMonth').value}.xlsx`);
 }
+
 window.onload = initReport;
