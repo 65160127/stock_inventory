@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body class="bg-slate-50 flex h-screen overflow-hidden">
@@ -28,19 +29,20 @@
                     </button>                  
                 </div>
             </div>
-            <div class="flex items-center gap-4">
-                <div class="relative">
-                     <i class="fas fa-search absolute left-3 top-3 text-slate-400"></i>
-                     <input type="text" id="searchInput" onkeyup="applyAllFilters()" placeholder="ค้นหารหัสสินค้า..." 
-                     class="pl-10 pr-4 py-2 border rounded-full w-64 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <form action="/api/products/upload" method="POST" enctype="multipart/form-data" class="flex items-center gap-2">
-                    <input type="file" name="file" class="hidden" id="excelUpload" onchange="this.form.submit()">
-                    <label for="excelUpload" class="cursor-pointer bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-semibold hover:bg-emerald-200 transition">
-                        <i class="fas fa-file-import mr-2"></i>นำเข้ายอด (Excel)
-                    </label>
-                </form>
-            </div>
+           <div class="flex items-center gap-4">
+    <div class="relative">
+        <i class="fas fa-search absolute left-3 top-3 text-slate-400"></i>
+        <input type="text" id="searchInput" onkeyup="applyAllFilters()" placeholder="ค้นหารหัสสินค้า..." 
+               class="pl-10 pr-4 py-2 border rounded-full w-64 focus:outline-none focus:ring-2 focus:ring-blue-500">
+    </div>
+    
+    <div class="flex items-center gap-2">
+        <input type="file" id="excelUploadInput" class="hidden" accept=".xlsx, .xls">
+        <label for="excelUploadInput" class="cursor-pointer bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-semibold hover:bg-emerald-200 transition">
+            <i class="fas fa-file-import mr-2"></i>นำเข้ายอด (Excel)
+        </label>
+    </div>
+</div>
         </header>
 
         <div id="filterBarContainer" class="mb-6 bg-white p-4 rounded-2xl border shadow-sm flex flex-wrap gap-6 items-center">           
@@ -111,7 +113,7 @@
                         <th class="p-4">Box List</th>
                         <th class="p-4">Supp Code</th>
                         <th class="p-4 text-center">คงเหลือ</th>
-                        <th class="p-4 text-center">Min / Max</th>
+                        <th class="p-4 text-center">use / overflow</th>
                         <th class="p-4 text-center">จัดการ</th>
                     </tr>
                 </thead>
@@ -168,5 +170,47 @@
     </div>
 
     <script src="/js/dashboard.js"></script>
+
+    <script>
+document.getElementById('excelUploadInput').addEventListener('change', async function() {
+    const file = this.files[0];
+    if (!file) return;
+
+    Swal.fire({
+        title: 'กำลังประมวลผล...',
+        text: 'กรุณารอสักครู่ ระบบกำลังบันทึกข้อมูลและประวัติสต็อก',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+    });
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const response = await fetch('/api/products/upload', {
+            method: 'POST',
+            body: formData
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'นำเข้าสำเร็จ!',
+                text: result.message,
+                confirmButtonColor: '#10b981'
+            }).then(() => {
+                window.location.reload(); 
+            });
+        } else {
+            throw new Error(result.error || 'เกิดข้อผิดพลาดบางประการ');
+        }
+    } catch (err) {
+        Swal.fire('เกิดข้อผิดพลาด', err.message, 'error');
+    } finally {
+        this.value = ''; 
+    }
+});
+</script>
 </body>
 </html>

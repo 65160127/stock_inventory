@@ -49,6 +49,10 @@ app.get('/report', async (req, res) => {
     }
 });
 
+app.get('/history', (req, res) => {
+    res.render('stock_history');
+});
+
 
 app.use('/api/products', productRoutes);
 

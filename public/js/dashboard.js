@@ -75,9 +75,15 @@ function closeModal() { document.getElementById('stockModal').classList.add('hid
 
 async function handleStock(type) {
     const amount = parseInt(document.getElementById('stockAmount').value);
-    if (!amount || amount <= 0) return alert('กรุณาระบุจำนวนที่ถูกต้อง');
+    if (!amount || amount <= 0) {
+        return Swal.fire('ผิดพลาด', 'กรุณาระบุจำนวนที่ถูกต้อง', 'error');
+    }
+
     let newStock = (type === 'update') ? currentStockValue + amount : currentStockValue - amount;
-    if (newStock < 0) return alert('สต็อกไม่เพียงพอต่อการใช้งาน');
+    if (newStock < 0) {
+        return Swal.fire('สต็อกไม่เพียงพอ', 'ยอดคงเหลือไม่สามารถติดลบได้', 'warning');
+    }
+
     try {
         const response = await fetch('/api/products/update-stock', {
             method: 'PATCH',
@@ -92,8 +98,47 @@ async function handleStock(type) {
                 }] 
             })
         });
-        if (response.ok) location.reload();
-    } catch (err) { alert('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้'); }
+
+        if (response.ok) {
+
+            closeModal();
+            Swal.fire({
+                icon: 'success',
+                title: 'บันทึกสำเร็จ',
+                text: `อัปเดตสต็อก ${selectedBoxId} เรียบร้อยแล้ว`,
+                timer: 1500,
+                showConfirmButton: false
+            });
+
+
+            updateDOMStock(selectedBoxId, newStock);
+        }
+    } catch (err) { 
+        Swal.fire('Error', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
+    }
+}
+
+function updateDOMStock(boxId, newStockValue) {
+    const items = document.querySelectorAll(`[data-name="${boxId.toLowerCase()}"]`);
+    items.forEach(item => {
+        // อัปเดต attribute data-stock เพื่อให้ Filter ทำงานถูกต้อง
+        item.setAttribute('data-stock', newStockValue);
+        
+        // ค้นหา element ที่แสดงตัวเลขสต็อกและเปลี่ยนค่า
+        const stockDisplay = item.querySelector('.text-5xl, .text-lg.font-black');
+        if (stockDisplay) {
+            stockDisplay.innerText = newStockValue;
+            
+            // ปรับสีตัวเลขตาม Logic (Low/Normal/Overflow)
+            const min = parseInt(item.getAttribute('data-min'));
+            const max = parseInt(item.getAttribute('data-max')) || 0;
+            
+            stockDisplay.classList.remove('text-red-500', 'text-orange-500', 'text-blue-600');
+            if (newStockValue <= min) stockDisplay.classList.add('text-red-500');
+            else if (max > 0 && newStockValue > max) stockDisplay.classList.add('text-orange-500');
+            else stockDisplay.classList.add('text-blue-600');
+        }
+    });
 }
 
 function getExportData() {

@@ -10,5 +10,6 @@ router.post('/upload', upload.single('file'), productController.importExcel);
 router.delete('/:id', productController.deleteProduct);
 router.put('/edit', productController.editProduct);
 router.get('/usage-report', productController.getUsageReport);
+router.get('/history-data', productController.getHistoryData);
 
 module.exports = router;

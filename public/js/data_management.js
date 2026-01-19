@@ -9,12 +9,27 @@ function applyFilters() {
 }
 
 async function deleteItem(boxList) {
-    if (confirm(`⚠️ คำเตือน: คุณต้องการลบสินค้า "${boxList}" ออกจากฐานข้อมูลใช่หรือไม่?`)) {
+    const result = await Swal.fire({
+        title: 'ยืนยันการลบ?',
+        text: `คุณต้องการลบสินค้า "${boxList}" ใช่หรือไม่? ข้อมูลนี้จะไม่สามารถกู้คืนได้`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'ใช่, ลบเลย!',
+        cancelButtonText: 'ยกเลิก'
+    });
+
+    if (result.isConfirmed) {
         try {
             const res = await fetch(`/api/products/${boxList}`, { method: 'DELETE' });
-            if (res.ok) { alert('ลบข้อมูลสำเร็จ'); location.reload(); }
-            else { alert('ไม่สามารถลบข้อมูลได้'); }
-        } catch (err) { alert('เกิดข้อผิดพลาดในการเชื่อมต่อ'); }
+            if (res.ok) {
+                Swal.fire('ลบสำเร็จ!', 'ข้อมูลสินค้าถูกลบออกจากระบบแล้ว', 'success');
+                document.querySelector(`tr[data-name="${boxList.toLowerCase()}"]`).remove();
+            }
+        } catch (err) {
+            Swal.fire('ผิดพลาด', 'ไม่สามารถลบข้อมูลได้', 'error');
+        }
     }
 }
 
