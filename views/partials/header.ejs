@@ -5,7 +5,10 @@
             <h1 class="font-bold text-xl text-slate-800">Stock Inventory</h1>
         </div>
         <nav class="space-y-2">
-            <a href="/" id="nav-dashboard" class="flex items-center gap-3 p-3 text-slate-500 hover:bg-slate-100 rounded-xl transition">
+            <a href="/" id="nav-main" class="flex items-center gap-3 p-3 text-slate-500 hover:bg-slate-100 rounded-xl transition">
+                <i class="fas fa-home"></i> เมนูหลัก
+            </a>
+            <a href="/dashboard" id="nav-dashboard" class="flex items-center gap-3 p-3 text-slate-500 hover:bg-slate-100 rounded-xl transition">
                 <i class="fas fa-chart-line"></i> แผงควบคุมสต็อก
             </a>
             <a href="/report" id="nav-report" class="flex items-center gap-3 p-3 text-slate-500 hover:bg-slate-100 rounded-xl transition">
@@ -25,22 +28,4 @@
         </button>
     </div>
 </aside>
-
-<script>
-    const path = window.location.pathname;
-    const activeClass = ["bg-blue-600", "text-white", "shadow-lg", "shadow-blue-200"];
-    
-    if (path === '/') document.getElementById('nav-dashboard')?.classList.add(...activeClass);
-    else if (path === '/report') document.getElementById('nav-report')?.classList.add(...activeClass);
-    else if (path === '/data') document.getElementById('nav-data')?.classList.add(...activeClass);
-
-    function triggerExport(type) {
-        if (type === 'PDF') {
-            if (typeof exportToPDF === 'function') exportToPDF();
-            else alert('หน้าจอนี้ยังไม่รองรับ PDF');
-        } else {
-            if (typeof exportToExcel === 'function') exportToExcel();
-            else alert('หน้าจอนี้ยังไม่รองรับ Excel');
-        }
-    }
-</script>
+<script src="/js/common.js"></script>

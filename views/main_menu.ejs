@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Main Menu | Stock Inventory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 flex items-center justify-center min-h-screen">
+    <div class="max-w-4xl w-full px-6 py-12">
+        <div class="text-center mb-12">
+            <div class="inline-block bg-blue-600 p-4 rounded-3xl mb-4 shadow-lg shadow-blue-200">
+                <i class="fas fa-boxes text-4xl text-white"></i>
+            </div>
+            <h1 class="text-4xl font-black text-slate-800 tracking-tight">Stock Management System</h1>
+            <p class="text-slate-400 mt-2 text-lg">Our Stock Control System help reduce product loss.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <a href="/dashboard" class="group bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-blue-100 hover:-translate-y-2 transition-all duration-300 text-center">
+                <div class="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-blue-600 transition-colors">
+                    <i class="fas fa-chart-line text-2xl text-blue-600 group-hover:text-white"></i>
+                </div>
+                <h3 class="font-bold text-xl text-slate-800 mb-2">แผงควบคุมสต็อก</h3>
+                <p class="text-sm text-slate-400">ตรวจสอบยอดคงเหลือและการเบิกจ่ายด่วน</p>
+            </a>
+
+            <a href="/report" class="group bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-emerald-100 hover:-translate-y-2 transition-all duration-300 text-center">
+                <div class="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-emerald-600 transition-colors">
+                    <i class="fas fa-file-contract text-2xl text-emerald-600 group-hover:text-white"></i>
+                </div>
+                <h3 class="font-bold text-xl text-slate-800 mb-2">รายงานรายเดือน</h3>
+                <p class="text-sm text-slate-400">สรุปยอดการใช้งานและวิเคราะห์สถิติ</p>
+            </a>
+
+            <a href="/data" class="group bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-purple-100 hover:-translate-y-2 transition-all duration-300 text-center">
+                <div class="w-16 h-16 bg-purple-50 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-purple-600 transition-colors">
+                    <i class="fas fa-database text-2xl text-purple-600 group-hover:text-white"></i>
+                </div>
+                <h3 class="font-bold text-xl text-slate-800 mb-2">จัดการข้อมูลหลัก</h3>
+                <p class="text-sm text-slate-400">ดูข้อมูลทั้งหมดที่มีและจัดการข้อมูลเร่งด่วน</p>
+            </a>
+        </div>
+    </div>
+</body>
+</html>

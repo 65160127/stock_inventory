@@ -6,22 +6,16 @@ exports.importExcel = async (req, res) => {
         if (!req.file) return res.status(400).json({ error: 'กรุณาแนบไฟล์ Excel' });
         const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
         const data = xlsx.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-
         for (const item of data) {
             const inAmt = parseInt(item.STOCK_IN) || 0;
             const outAmt = parseInt(item.STOCK_OUT) || 0;
             const netChange = inAmt - outAmt;
-
             if (netChange !== 0 || item.BOX_LIST) {
                 await Product.incrementStock({
-                    BOX_LIST: item.BOX_LIST,
-                    SUPP_CODE: item.SUPP_CODE,
-                    STOCK: netChange,
-                    MIN_STOCK: item.MIN_STOCK,
-                    MAX_STOCK: item.MAX_STOCK,
-                    Process: item.Process
+                    BOX_LIST: item.BOX_LIST, SUPP_CODE: item.SUPP_CODE,
+                    STOCK: netChange, MIN_STOCK: item.MIN_STOCK,
+                    MAX_STOCK: item.MAX_STOCK, Process: item.Process
                 });
-                
                 if (inAmt > 0) await Product.logHistory(item.BOX_LIST, 'in', inAmt);
                 if (outAmt > 0) await Product.logHistory(item.BOX_LIST, 'out', outAmt);
             }
@@ -43,30 +37,21 @@ exports.updateProducts = async (req, res) => {
 };
 
 exports.getUsageReport = async (req, res) => {
-    try {
-        const { month } = req.query;
-        const report = await Product.getUsageReport(month);
-        res.json(report);
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    try { res.json(await Product.getUsageReport(req.query.month)); }
+    catch (err) { res.status(500).json({ error: err.message }); }
 };
 
 exports.getProducts = async (req, res) => {
-    try {
-        const products = await Product.getAll();
-        res.json(products);
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    try { res.json(await Product.getAll()); }
+    catch (err) { res.status(500).json({ error: err.message }); }
 };
 
 exports.deleteProduct = async (req, res) => {
-    try {
-        await Product.delete(req.params.id);
-        res.json({ message: 'ลบข้อมูลสำเร็จ' });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    try { await Product.delete(req.params.id); res.json({ message: 'ลบข้อมูลสำเร็จ' }); }
+    catch (err) { res.status(500).json({ error: err.message }); }
 };
 
 exports.editProduct = async (req, res) => {
-    try {
-        await Product.updateInfo(req.body);
-        res.json({ message: '✅ แก้ไขข้อมูลสำเร็จ' });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    try { await Product.updateInfo(req.body); res.json({ message: '✅ แก้ไขข้อมูลสำเร็จ' }); }
+    catch (err) { res.status(500).json({ error: err.message }); }
 };
