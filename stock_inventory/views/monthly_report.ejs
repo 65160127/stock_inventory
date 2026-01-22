@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>รายงานสรุปยอด | Inventory Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
+        body { font-family: 'Sarabun', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 flex h-screen overflow-hidden">
+
+    <%- include('partials/header') %>
+
+    <main class="flex-1 overflow-y-auto p-8">
+        <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-10">
+            <div>
+                <h2 class="text-3xl font-extrabold text-slate-800">สรุปยอดการใช้งาน</h2>
+                <p class="text-slate-400">วิเคราะห์สัดส่วนและอันดับการใช้งานจริงรายเดือน</p>
+            </div>
+            <div class="flex items-center gap-3 bg-white p-2 rounded-2xl border shadow-sm">
+                <span class="text-sm font-bold text-slate-500 ml-2">เลือกเดือน:</span>
+                <select id="reportMonth" onchange="initReport()" class="bg-slate-50 border-none outline-none text-sm font-bold p-2 rounded-xl text-blue-600 cursor-pointer">
+                    <option value="2026-01" selected>มกราคม 2569</option>
+                    <option value="2025-12">ธันวาคม 2568</option>
+                    <option value="2025-11">พฤศจิกายน 2568</option>
+                </select>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-blue-600 p-6 rounded-[2.5rem] text-white shadow-xl shadow-blue-100 transition-all">
+                <p class="text-blue-100 text-xs font-bold uppercase tracking-widest mb-2">กล่องที่ใช้มากที่สุด</p>
+                <h3 id="top-box-name" class="text-2xl font-black">-</h3>
+            </div>
+            <div class="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">ยอดการใช้งานรวม (ใบ)</p>
+                <h3 id="total-usage" class="text-4xl font-black text-slate-800">0</h3>
+            </div>
+            <div class="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">รายการที่มีการเคลื่อนไหว</p>
+                <h3 id="active-items-count" class="text-4xl font-black text-slate-800">0</h3>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+            <div class="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm relative">
+                <div class="flex justify-between items-center mb-6">
+                    <h4 class="font-black text-slate-800 uppercase tracking-tight">กราฟเปรียบเทียบการใช้งาน (Top 5)</h4>
+                    <button onclick="openFullChartModal()" class="text-blue-600 hover:bg-blue-50 px-3 py-1 rounded-xl text-sm font-bold transition">
+                        <i class="fas fa-expand-alt mr-1"></i> ดูทั้งหมด
+                    </button>
+                </div>
+                <div class="h-64">
+                    <canvas id="usageChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm">
+                <h4 class="font-black text-slate-800 uppercase tracking-tight mb-6">สัดส่วนการใช้งาน (%)</h4>
+                <div class="h-64 flex justify-center">
+                    <canvas id="pieChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm">
+            <h4 class="font-black text-slate-800 uppercase tracking-tight mb-6">อันดับการใช้งานรายชิ้น</h4>
+            <div class="overflow-hidden">
+                <table class="w-full" id="mainReportTable">
+                    <thead>
+                        <tr class="text-[10px] text-slate-400 font-black uppercase border-b">
+                            <th class="text-left pb-4">อันดับ</th>
+                            <th class="text-left pb-4">รหัสกล่อง</th>
+                            <th class="text-right pb-4">จำนวนที่ใช้จริง</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportTableBody" class="text-sm">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <div id="fullChartModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-6xl h-[80vh] rounded-[3rem] shadow-2xl flex flex-col p-8 relative scale-95 transition-all duration-300">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h3 class="text-2xl font-black text-slate-800">เปรียบเทียบการใช้งานกล่องทั้งหมด</h3>
+                    <p id="fullChartSubtitle" class="text-slate-400 text-sm">ข้อมูลสรุปประจำเดือน</p>
+                </div>
+                <button onclick="closeFullChartModal()" class="w-12 h-12 bg-slate-100 text-slate-500 rounded-2xl hover:bg-red-50 hover:text-red-500 transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="flex-1 min-h-0">
+                <canvas id="fullUsageChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/monthly_report.js"></script>
+</body>
+</html>

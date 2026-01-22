@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>จัดการข้อมูลหลัก | Stock Inventory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body class="bg-slate-50 flex h-screen">
+    
+    <%- include('partials/header') %>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        <header class="flex justify-between items-center mb-10">
+            <div>
+                <h2 class="text-3xl font-bold text-slate-800">จัดการข้อมูลหลัก</h2>
+                <p class="text-slate-400">แก้ไขหรือลบข้อมูลสินค้าหลักออกจากระบบ</p>
+            </div>
+            <div class="relative">
+                <i class="fas fa-search absolute left-3 top-3 text-slate-400"></i>
+                <input type="text" id="searchInput" onkeyup="applyFilters()" placeholder="ค้นหารหัสสินค้า..." 
+                       class="pl-10 pr-4 py-2 border rounded-full w-64 focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+        </header>
+
+        <div class="mb-6 bg-white p-4 rounded-2xl border shadow-sm flex gap-6 items-center">
+            <div class="flex items-center gap-2">
+                <span class="text-sm font-bold text-slate-500">Supplier:</span>
+                <select id="suppFilter" onchange="applyFilters()" class="p-2 border rounded-xl text-sm outline-none bg-slate-50">
+                    <option value="">ทั้งหมด</option>
+                    <% [...new Set(products.map(p => p.supp_code))].sort().forEach(supp => { %>
+                        <option value="<%= supp %>"><%= supp %></option>
+                    <% }); %>
+                </select>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-3xl border shadow-sm overflow-hidden">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-slate-50 border-b text-sm font-bold text-slate-600">
+                    <tr>
+                        <th class="p-4">Box List</th>
+                        <th class="p-4">Supplier</th>
+                        <th class="p-4">Process</th>
+                        <th class="p-4 text-center">Min Stock</th>
+                        <th class="p-4 text-center">Max Stock</th>
+                        <th class="p-4 text-center">จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody id="dataTable">
+                    <% products.forEach(product => { %>
+                        <tr class="border-b hover:bg-slate-50 transition data-row" 
+                            data-name="<%= product.box_list.toLowerCase() %>" 
+                            data-supp="<%= product.supp_code %>">
+                            <td class="p-4 font-bold text-slate-800"><%= product.box_list %></td>
+                            <td class="p-4 text-slate-500 uppercase"><%= product.supp_code %></td>
+                            <td class="p-4 text-slate-500"><%= product.process || '-' %></td>
+                            <td class="p-4 text-center"><%= product.min_stock %></td>
+                            <td class="p-4 text-center text-slate-400"><%= product.max_stock || '-' %></td>
+                            <td class="p-4 text-center space-x-2">
+                                <button onclick="openEditModal('<%= JSON.stringify(product).replace(/'/g, '&#39;') %>')" class="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition">
+                                     <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteItem('<%= product.box_list %>')" class="text-red-600 hover:bg-red-50 p-2 rounded-lg transition">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <div id="editModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+        <div class="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl scale-95 transition-transform duration-300">
+            <h3 class="text-xl font-bold mb-6 text-slate-800">แก้ไขข้อมูลสินค้า</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">รหัสสินค้า (แก้ไขไม่ได้)</label>
+                    <input type="text" id="editBoxList" disabled class="w-full p-3 bg-slate-100 border rounded-xl outline-none font-semibold text-slate-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Supplier Code</label>
+                    <input type="text" id="editSuppCode" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 uppercase">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Process</label>
+                    <input type="text" id="editProcess" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 uppercase" placeholder="เช่น CHI">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Min Stock</label>
+                        <input type="number" id="editMin" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Max Stock</label>
+                        <input type="number" id="editMax" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+            <div class="mt-8 flex gap-3">
+                <button onclick="closeEditModal()" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition">ยกเลิก</button>
+                <button onclick="saveEdit()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition">บันทึกการแก้ไข</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/data_management.js"></script>
+</body>
+</html>
